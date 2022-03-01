@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar'
-import { Observable } from 'rxjs';
+import {  EMPTY, Observable } from 'rxjs';
 import { Product } from './product.model';
-
+import {map,catchError} from 'rxjs/operators'
 @Injectable({
   providedIn: 'root'
 })
@@ -13,23 +13,33 @@ export class ProductService {
 
   constructor(private snackBar: MatSnackBar, private http: HttpClient) { }
 
-  showMessage(msg: string): void {
+  showMessage(msg: string, isError: boolean = false): void {
     this.snackBar.open(msg, 'X', {
       duration: 3000,
       horizontalPosition: 'right',
-      verticalPosition: 'top'
+      verticalPosition: 'top',
+      panelClass: isError ? ['msg-error'] : ['msg-success']
     })
   }
 
   create(product: Product): Observable<Product> {
-    return this.http.post<Product>(this.baseUrl, product)
+    return this.http.post<Product>(this.baseUrl, product).pipe(
+      map( (obj) => obj),
+      catchError(e=>this.handleError(e))
+    )
+  }
+  
+  handleError(e:any):Observable<any>{
+    console.log(e)
+    this.showMessage("Ocorreu um erro!",true)
+    return EMPTY
   }
 
   read(): Observable<Product[]> {
     return this.http.get<Product[]>(this.baseUrl)
   }
 
-  readById(id: string): Observable<Product> {
+  readById(id: number | null): Observable<Product> {
     const url = `${this.baseUrl}/${id}`
     return this.http.get<Product>(url)
   }
@@ -38,7 +48,7 @@ export class ProductService {
     const url = `${this.baseUrl}/${product.id}`
     return this.http.put<Product>(url, product)
   }
-  delete(id: string): Observable<Product> {
+  delete(id: number | undefined): Observable<Product> {
     const url = `${this.baseUrl}/${id}`
     return this.http.delete<Product>(url)
   }
